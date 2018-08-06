@@ -33,3 +33,35 @@ class CustomPartitioner(override val numPartitions: Int) extends Partitioner {
 		}   
 	}
 }
+//usage example
+def createSparkSession():SparkSession=
+  {
+    val spark = org.apache.spark.sql.SparkSession.builder
+      .master("local")
+      .appName("Spark CSV Reader")
+      .config("spark.testing.memory", "2147480000")
+      .getOrCreate;
+    
+    spark
+  }
+  
+import org.apache.log4j.Logger
+import org.apache.log4j.Level
+import org.apache.spark.sql.catalyst.expressions.Ascending
+import org.apache.spark.sql.types.IntegerType
+
+object readDataFromOnePartition {
+  def main(args: Array[String]) {
+   Logger.getLogger("org").setLevel(Level.OFF)
+   Logger.getLogger("akka").setLevel(Level.OFF)
+   val sparkObj= createSparkSession()
+   val spark=sparkObj.createSparkSession()
+   import spark.implicits._
+
+
+   
+   case class entity(name:String,km_travel:Int,date:Int)
+   val data=spark.read.textFile("distanceTravelledData.txt").map(f => f.split(',')).map{case Array(a,b,c) => (a,b.toInt,c)}.toDF("name","km_travel","date")//.rdd.flatMap(x => x.split(","))//.map(f=>f.toInt) 
+   val dat=data.repartitionByRange(26,$"name").rdd.mapPartitionsWithIndex((i,rows) => Iterator((i,rows.size))).toDF("partition_number","number_of_records").show
+   
+  }
